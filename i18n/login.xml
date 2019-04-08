@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <messages>
+  <message id='headline-login'>
+    <h3>Sign in to Lpad</h3>
+  </message>
+
+  <message id='headline-register'>
+    <h3>Sign up to Lpad</h3>
+  </message>
+
+  <message id='username'>Username</message>
+  <message id='password'>Password</message>
+  <message id='repeat-password'>Repeat Password</message>
+  <message id='email'>E-Mail Address</message>
+  <message id='login'>Login</message>
+  <message id='register'>Register</message>
+  <message id='no-usr-pwd'>No username or password was set</message>
+  <message id="goto-register">Not registered? Sign up here</message>
+  <message id='goto-login'>Already registered? Login here</message>
+ </messages>
