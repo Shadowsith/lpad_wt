@@ -1,8 +1,8 @@
 #include <memory>
 #include <Wt/WApplication.h>
+#include <Wt/WWebWidget.h>
 #include <Wt/WBreak.h>
 #include <Wt/WContainerWidget.h>
-#include <Wt/WStackedWidget.h>
 #include <Wt/WMenu.h>
 #include <Wt/WLineEdit.h>
 #include <Wt/WPushButton.h>
@@ -11,7 +11,10 @@
 #include <Wt/WTemplate.h>
 #include <Wt/WJavaScript.h>
 #include <Wt/WMessageResourceBundle.h>
+#include "./header/widgetFactory.h"
 #include "./header/js.h"
+
+namespace Pad {
 
 class Lpad : public Wt::WApplication {
 public:
@@ -30,9 +33,12 @@ private:
         std::string pad = "pad";
     } _path;
 
+    std::unique_ptr<WidgetFacory> _wfa;
+
     // Global used
     Wt::WContainerWidget *_cw;
-    Wt::WTemplate *_headline;
+    Wt::WContainerWidget *_test;
+    Wt::WText *_headline;
 
     // Login + Register
     Wt::WTemplate *_form1;
@@ -54,8 +60,12 @@ private:
     Wt::WLineEdit *_lePwd2Register;
 
     // Main site
-    Wt::WStackedWidget *_stw;
-    Wt::WMenu *_menu;
+    Wt::WTemplate *_nav;
+    Wt::WContainerWidget *_navCon;
+    Wt::WContainerWidget *_menu;
+    Wt::WAnchor *_padName;
+    Wt::WContainerWidget *_navSide;
+    Wt::WContainerWidget *_navCollapse;
 
     // JavaScript
     Wt::JSlot _slot;
@@ -65,7 +75,9 @@ private:
 Lpad::Lpad(const Wt::WEnvironment& env)
     : Wt::WApplication(env)
 {
-    messageResourceBundle().use(appRoot() + "i18n/login");
+    _wfa = std::make_unique<WidgetFacory>();
+
+    messageResourceBundle().use(appRoot() + "i18n/general");
     useStyleSheet("./lib/bootstrap/css/bootstrap.min.css");
     useStyleSheet("./lib/jquery-announce/jquery.announce.css");
     requireJQuery("./lib/jquery/jquery-3.3.1.min.js");
@@ -77,9 +89,11 @@ void Lpad::addLogin() {
     _cw = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
     _cw->addStyleClass("container form-signin border mt-5 pl-5 pr-5");
 
-    _headline = _cw->addWidget(std::make_unique<Wt::WTemplate>());
-    _headline->setTemplateText(Wt::WString::tr("headline-login"));
-    _headline->addStyleClass("mb-3");
+    _test = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
+    _test->setHtmlTagName("form");
+
+    _headline = _cw->addWidget(_wfa->createText("h3", "mb-3"));
+    _headline->setText(Wt::WString::tr("headline-register"));
 
     _form1 = _cw->addWidget(std::make_unique<Wt::WTemplate>());
     _form1->setTemplateText("<form class=\"form-signin\">${fg1} ${fg2}</form>");
@@ -115,9 +129,8 @@ void Lpad::addRegister() {
     _cw = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
     _cw->addStyleClass("container form-signin border mt-5 pl-5 pr-5");
 
-    _headline = _cw->addWidget(std::make_unique<Wt::WTemplate>());
-    _headline->setTemplateText(Wt::WString::tr("headline-register"));
-    _headline->addStyleClass("mb-3");
+    _headline = _cw->addWidget(_wfa->createText("h3", "mb-3"));
+    _headline->setText(Wt::WString::tr("headline-register"));
 
     _form1 = _cw->addWidget(std::make_unique<Wt::WTemplate>());
     _form1->setTemplateText("<form>${fg1} ${fg2} ${fg3} ${fg4}</form>");
@@ -165,10 +178,34 @@ void Lpad::addRegister() {
 }
 
 void Lpad::addPad() {
-    _stw = root()->addWidget(std::make_unique<Wt::WStackedWidget>());
-    _menu = _stw->addWidget(std::make_unique<Wt::WMenu>());
-    _menu->addItem("Introduction", std::make_unique<Wt::WText>("intro"));
-    _menu->addItem("Download", std::make_unique<Wt::WText>("Not yet available"));
+    _nav = root()->addWidget(std::make_unique<Wt::WTemplate>
+        ("<nav class=\"navbar navbar-expand-lg navbar-dark\""
+        "style=\"background-color: #810541;\">"
+        "${navcon}</nav>"));
+
+    _navCon = _nav->bindWidget("navcon", std::make_unique<Wt::WContainerWidget>());
+    _navCon->setStyleClass("container-fluid");
+
+    _padName = _navCon->addWidget(std::make_unique<Wt::WAnchor>());
+    _padName->setStyleClass("navbar-brand");
+    _padName->setText(Wt::WString::tr("padname"));
+
+    _navSide = _navCon->addWidget(std::make_unique<Wt::WContainerWidget>());
+    _navSide->setStyleClass("sidenav");
+
+    _navCollapse = _navCon->addWidget(std::make_unique<Wt::WContainerWidget>());
+    _navCollapse->setStyleClass("collapse navbar-collapse");
+
+    _menu = _navCollapse->addWidget(std::make_unique<Wt::WContainerWidget>());
+    _menu->setList(true);
+    _menu->setStyleClass("navbar-nav mr-auto");
+    auto _itm1 = _menu->addWidget(std::make_unique<Wt::WText>("intro"));
+    _itm1->setStyleClass("nav-item");
+    auto _itm2 = _menu->addWidget(std::make_unique<Wt::WText>("Not yet available"));
+    _itm2->setStyleClass("nav-item");
+
+    _cw = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
+    _cw->setStyleClass("container-fluid");
 }
 
 void Lpad::registerLoginEvents() {
@@ -190,23 +227,26 @@ void Lpad::pbLoginClicked() {
 }
 
 void Lpad::handleInternalPath(const std::string &internalPath) {
-    if(internalPath == "/" + _path.login) {
-        setTitle("Login to Lpad");
-        addLogin();
-        registerLoginEvents();
-    } else if(internalPath == "/" + _path.signup) {
+    if(internalPath == "/" + _path.signup) {
         setTitle("Sign up to Lpad");
         addRegister();
     } else if(internalPath == "/" + _path.pad) {
         setTitle("Lpad");
         addPad();
+    } else {
+        setTitle("Login to Lpad");
+        addLogin();
+        registerLoginEvents();
     }
+}
+
 }
 
 int main(int argc, char *argv[])
 {
     return Wt::WRun(argc, argv, [](const Wt::WEnvironment& env) {
-      return std::make_unique<Lpad>(env);
+      return std::make_unique<Pad::Lpad>(env);
     });
     return 0;
 }
+

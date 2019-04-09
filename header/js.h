@@ -4,6 +4,8 @@
 #include <string>
 #include <Wt/WString.h>
 
+namespace Pad {
+
 // js function provider
 class EScript {
 public:
@@ -29,5 +31,7 @@ private:
         return code;
     }
 };
+
+}
 
 #endif // JS_H
